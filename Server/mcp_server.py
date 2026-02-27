@@ -14,7 +14,7 @@ print(f"Current working directory: {current_directory}")
 if os.path.basename(current_directory) == "server":
     directory_path = os.path.join(".", "embedding_model")
 else:
-    directory_path = os.path.join(".", "server", "embedding_model")
+    directory_path = os.path.join(".", "embedding_model")
 
 if Path(directory_path).is_dir():
     print(f"The directory '{directory_path}' exists.")
@@ -33,7 +33,7 @@ Settings.embed_model = embed_model
 if os.path.basename(current_directory) == "server":
     storage_path = os.path.join(".", "storage")
 else:
-    storage_path = os.path.join(".", "server", "storage")
+    storage_path = os.path.join(".", "storage")
 
 storage_context = StorageContext.from_defaults(persist_dir=storage_path)
 index = load_index_from_storage(storage_context=storage_context)
