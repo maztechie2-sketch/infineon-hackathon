@@ -1,0 +1,54 @@
+# ============================================================
+# PERSON PUSHING FROM HACKATHON VENUE (you)
+# ============================================================
+
+git init
+git add .
+git commit -m "Agentic bug detection system - Infineon Hackathon"
+
+# Create repo on GitHub first (github.com → New Repository)
+# Then:
+git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+git branch -M main
+git push -u origin main
+
+
+# ============================================================
+# COLLEAGUES IN BENGALURU (they run these)
+# ============================================================
+
+# 1. Clone the repo
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+cd YOUR_REPO_NAME
+
+# 2. Install Python deps
+pip install -r requirements.txt
+
+# 3. Install Ollama + model
+#    Download Ollama: https://ollama.com/download
+ollama pull qwen2.5-coder:7b
+
+# 4. Copy embedding_model/ and storage/ into server/ folder
+#    (share via Google Drive / USB / LAN transfer)
+
+# 5. Start MCP server (keep this terminal open)
+cd server
+python mcp_server.py
+
+# 6. In a NEW terminal — run the pipeline
+cd ..
+python code/main.py samples.csv output.csv
+
+# 7. Open GUI
+#    Open code/gui.html in browser
+#    Drag output.csv into it
+
+
+# ============================================================
+# IMPORTANT: embedding_model/ and storage/ folders
+# Share these via one of:
+#   - Google Drive link
+#   - USB drive
+#   - LAN: python -m http.server 8080 (run from server/ folder)
+#     then colleagues wget/curl the files
+# ============================================================
