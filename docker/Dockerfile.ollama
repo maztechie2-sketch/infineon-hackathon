@@ -1,0 +1,11 @@
+FROM ollama/ollama:latest
+
+# Copy the pre-pulled Qwen model into the image
+# This requires running: ollama pull qwen2.5-coder:7b on YOUR machine first
+# Then the model files are at: ~/.ollama/models/ (Linux/Mac)
+# or C:\Users\<user>\.ollama\models\ (Windows)
+COPY ollama_models/ /root/.ollama/models/
+
+EXPOSE 11434
+
+CMD ["ollama", "serve"]

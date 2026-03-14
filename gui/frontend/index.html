@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BugSlayers — Infineon Agentic Bug Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+:root {
+  --navy:    #0B1E3D;
+  --navy2:   #0f2548;
+  --teal:    #00C2CC;
+  --teal2:   #00E5F0;
+  --accent:  #FF6B35;
+  --green:   #00D68F;
+  --red:     #FF4D6D;
+  --gold:    #FFD166;
+  --bg:      #070F1E;
+  --surface: #0D1B30;
+  --surface2:#111f35;
+  --border:  rgba(0,194,204,0.15);
+  --text:    #E2EBF6;
+  --muted:   #5B7A99;
+  --mono:    'Space Mono', monospace;
+  --sans:    'DM Sans', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+
+/* GRID BG */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(0,194,204,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,194,204,0.03) 1px,transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none;z-index:0;
+}
+
+#root{position:relative;z-index:1}
+
+/* ── HEADER ── */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 40px;
+  background:rgba(11,30,61,0.8);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{
+  width:38px;height:38px;border-radius:8px;
+  background:linear-gradient(135deg,var(--teal),var(--navy));
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:16px;font-weight:700;color:white;
+  box-shadow:0 0 20px rgba(0,194,204,0.3);
+}
+.logo-text{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--teal);letter-spacing:1px}
+.logo-sub{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+.status-bar{display:flex;gap:12px}
+.status-pill{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:20px;
+  background:var(--surface);border:1px solid var(--border);
+  font-size:11px;font-family:var(--mono);color:var(--muted);
+}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.status-dot.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
+.status-dot.err{background:var(--red);box-shadow:0 0 8px var(--red)}
+
+/* ── MAIN ── */
+.main{padding:48px 40px;max-width:1300px;margin:0 auto}
+
+/* ── HERO UPLOAD ── */
+.hero{text-align:center;margin-bottom:56px}
+.hero h1{
+  font-family:var(--mono);font-size:clamp(28px,4vw,48px);
+  font-weight:700;line-height:1.1;margin-bottom:16px;
+  background:linear-gradient(135deg,var(--teal2),var(--text),var(--teal));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero p{color:var(--muted);font-size:16px;max-width:500px;margin:0 auto 40px;line-height:1.7}
+
+.upload-zone{
+  border:2px dashed var(--border);border-radius:16px;
+  padding:60px 40px;cursor:pointer;transition:all .3s;
+  background:var(--surface);position:relative;overflow:hidden;
+  max-width:560px;margin:0 auto;
+}
+.upload-zone::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at center,rgba(0,194,204,0.05) 0%,transparent 70%);
+  opacity:0;transition:opacity .3s;
+}
+.upload-zone:hover{border-color:var(--teal);transform:translateY(-2px);box-shadow:0 8px 40px rgba(0,194,204,0.1)}
+.upload-zone:hover::before{opacity:1}
+.upload-zone.drag{border-color:var(--teal);background:rgba(0,194,204,0.05)}
+.upload-icon{font-size:48px;margin-bottom:16px;display:block}
+.upload-zone h3{font-family:var(--mono);font-size:16px;color:var(--teal);margin-bottom:8px}
+.upload-zone p{font-size:13px;color:var(--muted)}
+.file-selected{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(0,214,143,0.1);border:1px solid rgba(0,214,143,0.3);
+  border-radius:8px;padding:10px 16px;margin-top:16px;
+  font-family:var(--mono);font-size:12px;color:var(--green);
+}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 28px;border-radius:8px;border:none;cursor:pointer;
+  font-family:var(--mono);font-size:13px;font-weight:700;
+  letter-spacing:0.5px;transition:all .2s;text-decoration:none;
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--teal),#007a82);
+  color:white;box-shadow:0 4px 20px rgba(0,194,204,0.3);
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(0,194,204,0.45)}
+.btn-primary:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.btn-ghost{background:transparent;color:var(--teal);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--teal);background:rgba(0,194,204,0.07)}
+.btn-accent{background:linear-gradient(135deg,var(--accent),#c04a1a);color:white}
+.btn-accent:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(255,107,53,0.35)}
+
+/* ── PROGRESS ── */
+.progress-wrap{max-width:560px;margin:24px auto 0;text-align:left}
+.progress-label{
+  display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:8px;
+}
+.progress-bar{height:4px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.progress-fill{
+  height:100%;border-radius:4px;
+  background:linear-gradient(90deg,var(--teal),var(--teal2));
+  transition:width 0.4s ease;
+  box-shadow:0 0 10px rgba(0,194,204,0.5);
+}
+.progress-steps{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.step-pill{
+  padding:4px 10px;border-radius:12px;font-size:10px;
+  font-family:var(--mono);border:1px solid var(--border);color:var(--muted);
+  transition:all .3s;
+}
+.step-pill.active{border-color:var(--teal);color:var(--teal);background:rgba(0,194,204,0.1)}
+.step-pill.done{border-color:var(--green);color:var(--green);background:rgba(0,214,143,0.1)}
+
+/* ── STATS ROW ── */
+.stats-row{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:16px;
+  margin-bottom:40px;
+}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:24px;position:relative;overflow:hidden;
+}
+.stat-card::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--teal),transparent);
+}
+.stat-num{font-family:var(--mono);font-size:36px;font-weight:700;color:var(--teal);line-height:1}
+.stat-label{font-size:12px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:1px}
+.stat-card.accent .stat-num{color:var(--accent)}
+.stat-card.accent::after{background:linear-gradient(90deg,var(--accent),transparent)}
+.stat-card.green .stat-num{color:var(--green)}
+.stat-card.green::after{background:linear-gradient(90deg,var(--green),transparent)}
+.stat-card.gold .stat-num{color:var(--gold)}
+.stat-card.gold::after{background:linear-gradient(90deg,var(--gold),transparent)}
+
+/* ── RESULTS TABLE ── */
+.results-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:20px;flex-wrap:wrap;gap:12px;
+}
+.results-title{font-family:var(--mono);font-size:18px;color:var(--text)}
+.search-box{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:8px 14px;
+}
+.search-box input{
+  background:none;border:none;outline:none;
+  color:var(--text);font-family:var(--sans);font-size:13px;width:200px;
+}
+.search-box input::placeholder{color:var(--muted)}
+
+.table-wrap{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;overflow:hidden;
+}
+.table-head{
+  display:grid;grid-template-columns:60px 90px 1fr 120px;
+  padding:14px 20px;
+  background:rgba(0,194,204,0.05);
+  border-bottom:1px solid var(--border);
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:1px;
+}
+.table-row{
+  display:grid;grid-template-columns:60px 90px 1fr 120px;
+  padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.04);
+  cursor:pointer;transition:background .15s;align-items:start;
+}
+.table-row:last-child{border-bottom:none}
+.table-row:hover{background:rgba(0,194,204,0.05)}
+.table-row.selected{background:rgba(0,194,204,0.08);border-left:2px solid var(--teal)}
+.cell-id{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.cell-line{
+  font-family:var(--mono);font-size:13px;font-weight:700;
+  color:var(--accent);
+}
+.cell-explain{font-size:13px;color:var(--text);line-height:1.6;padding-right:16px}
+.cell-explain-preview{
+  display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden;
+}
+.cell-action{display:flex;justify-content:flex-end}
+.view-btn{
+  padding:5px 12px;border-radius:6px;border:1px solid var(--border);
+  background:none;color:var(--teal);font-family:var(--mono);font-size:11px;
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.view-btn:hover{border-color:var(--teal);background:rgba(0,194,204,0.1)}
+
+/* ── DETAIL PANEL ── */
+.detail-overlay{
+  position:fixed;inset:0;background:rgba(7,15,30,0.85);
+  backdrop-filter:blur(4px);z-index:200;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.detail-panel{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;width:100%;max-width:900px;max-height:90vh;
+  overflow-y:auto;position:relative;
+}
+.detail-panel::-webkit-scrollbar{width:4px}
+.detail-panel::-webkit-scrollbar-track{background:transparent}
+.detail-panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+.detail-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:24px 28px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--surface);z-index:1;
+}
+.detail-id{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--teal)}
+.detail-close{
+  width:32px;height:32px;border-radius:6px;border:1px solid var(--border);
+  background:none;color:var(--muted);cursor:pointer;font-size:18px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.detail-close:hover{border-color:var(--red);color:var(--red)}
+.detail-body{padding:28px}
+
+.explanation-box{
+  background:rgba(0,194,204,0.06);border:1px solid rgba(0,194,204,0.2);
+  border-radius:10px;padding:20px;margin-bottom:24px;
+}
+.explanation-box .label{
+  font-family:var(--mono);font-size:10px;color:var(--teal);
+  text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;
+}
+.explanation-box p{font-size:14px;line-height:1.8;color:var(--text)}
+
+.bug-line-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,107,53,0.12);border:1px solid rgba(255,107,53,0.3);
+  border-radius:8px;padding:8px 16px;margin-bottom:24px;
+}
+.bug-line-badge .label{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.bug-line-badge .num{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent)}
+
+.code-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.code-grid{grid-template-columns:1fr}}
+.code-panel{}
+.code-panel .label{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:2px;
+  margin-bottom:8px;display:flex;align-items:center;gap:6px;
+}
+.code-panel .label span{
+  width:8px;height:8px;border-radius:50%;display:inline-block;
+}
+.code-panel .label .dot-red{background:var(--red)}
+.code-panel .label .dot-green{background:var(--green)}
+.code-block{
+  background:#060e1c;border:1px solid var(--border);
+  border-radius:8px;overflow:auto;
+  font-family:var(--mono);font-size:12px;line-height:1.8;
+}
+.code-line{
+  display:flex;padding:0 16px;min-width:max-content;
+}
+.code-line.bug{background:rgba(255,77,109,0.15);border-left:2px solid var(--red)}
+.line-num{
+  color:var(--muted);margin-right:16px;min-width:24px;
+  text-align:right;user-select:none;font-size:11px;padding-top:1px;
+}
+.line-content{color:#a8d8ea;white-space:pre}
+.code-line.bug .line-content{color:#ffb3c1}
+
+/* ── PIPELINE DIAGRAM ── */
+.pipeline{
+  display:flex;align-items:center;justify-content:center;
+  gap:0;margin:40px 0;flex-wrap:wrap;
+}
+.pipe-node{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:16px 20px;text-align:center;min-width:140px;
+}
+.pipe-node .pipe-num{
+  font-family:var(--mono);font-size:10px;color:var(--teal);
+  text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;
+}
+.pipe-node .pipe-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.pipe-node .pipe-desc{font-size:11px;color:var(--muted)}
+.pipe-arrow{
+  font-size:20px;color:var(--teal);padding:0 8px;
+  opacity:0.6;
+}
+
+/* ── EMPTY / LOADING ── */
+.centered{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:16px}
+.spinner{
+  width:40px;height:40px;border:3px solid var(--border);
+  border-top-color:var(--teal);border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-icon{font-size:48px;opacity:0.4}
+.empty-text{font-family:var(--mono);font-size:14px;color:var(--muted);text-align:center}
+
+/* ── DOWNLOAD BAR ── */
+.action-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:16px 24px;margin-bottom:24px;
+  flex-wrap:wrap;gap:12px;
+}
+.action-bar-info{font-size:13px;color:var(--muted)}
+.action-bar-info strong{color:var(--text)}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:30px;right:30px;z-index:999;
+  background:var(--surface);border:1px solid var(--green);
+  border-radius:10px;padding:14px 20px;
+  font-family:var(--mono);font-size:12px;color:var(--green);
+  box-shadow:0 8px 30px rgba(0,0,0,0.4);
+  animation:slideUp .3s ease;
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .table-head,.table-row{grid-template-columns:50px 80px 1fr}
+  .table-head>:last-child,.table-row>:last-child{display:none}
+  .main{padding:24px 16px}
+  .header{padding:14px 16px}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const API = "http://localhost:8000";
+
+// ── HEALTH STATUS ──────────────────────────────────────────────────────────
+function useHealth() {
+  const [health, setHealth] = useState({ mcp_server: null, ollama: null });
+  useEffect(() => {
+    fetch(`${API}/health`)
+      .then(r => r.json())
+      .then(d => setHealth(d))
+      .catch(() => setHealth({ mcp_server: false, ollama: false }));
+  }, []);
+  return health;
+}
+
+// ── STATUS BAR ─────────────────────────────────────────────────────────────
+function StatusBar({ health }) {
+  return (
+    <div className="status-bar">
+      <div className="status-pill">
+        <div className={`status-dot ${health.mcp_server ? 'ok' : health.mcp_server === false ? 'err' : ''}`}/>
+        MCP SERVER
+      </div>
+      <div className="status-pill">
+        <div className={`status-dot ${health.ollama ? 'ok' : health.ollama === false ? 'err' : ''}`}/>
+        QWEN LLM
+      </div>
+    </div>
+  );
+}
+
+// ── CODE VIEWER ────────────────────────────────────────────────────────────
+function CodeViewer({ code, bugLine, isCorrect }) {
+  const lines = (code || '').split('\n');
+  return (
+    <div className="code-block">
+      {lines.map((line, i) => {
+        const lineNum = i + 1;
+        const isBug = !isCorrect && lineNum === bugLine;
+        return (
+          <div key={i} className={`code-line ${isBug ? 'bug' : ''}`}>
+            <span className="line-num">{lineNum}</span>
+            <span className="line-content">{line || ' '}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── DETAIL PANEL ───────────────────────────────────────────────────────────
+function DetailPanel({ item, onClose }) {
+  useEffect(() => {
+    const handler = e => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  return (
+    <div className="detail-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="detail-panel">
+        <div className="detail-header">
+          <div>
+            <div className="detail-id">Snippet #{item.ID}</div>
+            <div style={{fontSize:12,color:'var(--muted)',marginTop:4,fontFamily:'var(--mono)'}}>
+              {item.Context || 'No context'}
+            </div>
+          </div>
+          <button className="detail-close" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="detail-body">
+          <div className="bug-line-badge">
+            <span className="label">BUG DETECTED ON LINE</span>
+            <span className="num">{item['Bug Line']}</span>
+          </div>
+
+          <div className="explanation-box">
+            <div className="label">🤖 Agent 3 — Qwen Explanation</div>
+            <p>{item.Explanation}</p>
+          </div>
+
+          <div className="code-grid">
+            <div className="code-panel">
+              <div className="label">
+                <span className="dot-red" style={{width:8,height:8,borderRadius:'50%',background:'var(--red)',display:'inline-block'}}/>
+                Buggy Code
+              </div>
+              <CodeViewer code={item['Buggy Code']} bugLine={parseInt(item['Bug Line'])} isCorrect={false}/>
+            </div>
+            <div className="code-panel">
+              <div className="label">
+                <span style={{width:8,height:8,borderRadius:'50%',background:'var(--green)',display:'inline-block'}}/>
+                Correct Code
+              </div>
+              <CodeViewer code={item['Correct Code']} bugLine={null} isCorrect={true}/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── UPLOAD ZONE ────────────────────────────────────────────────────────────
+function UploadZone({ onFile }) {
+  const [drag, setDrag] = useState(false);
+  const [fileName, setFileName] = useState(null);
+  const inputRef = useRef();
+
+  const handleFile = file => {
+    if (!file) return;
+    setFileName(file.name);
+    onFile(file);
+  };
+
+  return (
+    <div
+      className={`upload-zone ${drag ? 'drag' : ''}`}
+      onClick={() => inputRef.current.click()}
+      onDragOver={e => { e.preventDefault(); setDrag(true); }}
+      onDragLeave={() => setDrag(false)}
+      onDrop={e => { e.preventDefault(); setDrag(false); handleFile(e.dataTransfer.files[0]); }}
+    >
+      <span className="upload-icon">📂</span>
+      <h3>DROP samples.csv HERE</h3>
+      <p>or click to browse — your 20 C++ bug snippets</p>
+      {fileName && (
+        <div className="file-selected">
+          ✓ &nbsp;{fileName} ready
+        </div>
+      )}
+      <input ref={inputRef} type="file" accept=".csv" style={{display:'none'}}
+        onChange={e => handleFile(e.target.files[0])}/>
+    </div>
+  );
+}
+
+// ── PIPELINE DIAGRAM ───────────────────────────────────────────────────────
+function Pipeline() {
+  const nodes = [
+    { num: 'AGENT 1', name: 'Diff Engine', desc: 'Bug line detection' },
+    { num: 'AGENT 2', name: 'MCP Retrieval', desc: 'Manual doc search' },
+    { num: 'AGENT 3', name: 'Qwen LLM', desc: 'Explanation gen' },
+  ];
+  return (
+    <div className="pipeline">
+      {nodes.map((n, i) => (
+        <React.Fragment key={i}>
+          <div className="pipe-node">
+            <div className="pipe-num">{n.num}</div>
+            <div className="pipe-name">{n.name}</div>
+            <div className="pipe-desc">{n.desc}</div>
+          </div>
+          {i < nodes.length - 1 && <div className="pipe-arrow">→</div>}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
+// ── MAIN APP ───────────────────────────────────────────────────────────────
+function App() {
+  const health = useHealth();
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState('');
+  const [results, setResults] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState('');
+  const [toast, setToast] = useState(null);
+  const [step, setStep] = useState(0); // 0=upload,1=running,2=results
+
+  const showToast = msg => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const runPipeline = async () => {
+    if (!file) return;
+    setLoading(true);
+    setProgress(5);
+    setProgressLabel('Uploading samples.csv...');
+    setStep(1);
+
+    const form = new FormData();
+    form.append('file', file);
+
+    try {
+      setProgress(15);
+      setProgressLabel('Agent 1: Running diff analysis...');
+      await new Promise(r => setTimeout(r, 400));
+      setProgress(35);
+      setProgressLabel('Agent 2: Querying MCP server...');
+      await new Promise(r => setTimeout(r, 500));
+      setProgress(55);
+      setProgressLabel('Agent 3: Generating explanations (Qwen)...');
+
+      const res = await fetch(`${API}/analyze`, { method: 'POST', body: form });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Pipeline failed');
+      }
+      const data = await res.json();
+
+      setProgress(100);
+      setProgressLabel(`Done! ${data.total} snippets processed.`);
+      setResults(data.results);
+      setStep(2);
+      showToast(`✓ ${data.total} bugs detected successfully`);
+    } catch (e) {
+      setProgressLabel(`Error: ${e.message}`);
+      setProgress(0);
+      showToast(`✗ ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const downloadCSV = () => {
+    if (!results) return;
+    const rows = [['ID','Bug Line','Explanation']];
+    results.forEach(r => rows.push([r.ID, r['Bug Line'], `"${r.Explanation.replace(/"/g,'""')}"`]));
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'output.csv'; a.click();
+    showToast('✓ output.csv downloaded');
+  };
+
+  const filtered = results
+    ? results.filter(r =>
+        search === '' ||
+        String(r.ID).includes(search) ||
+        r.Explanation.toLowerCase().includes(search.toLowerCase()) ||
+        (r.Context || '').toLowerCase().includes(search.toLowerCase())
+      )
+    : [];
+
+  const avgLine = results
+    ? (results.reduce((a,r) => a + parseInt(r['Bug Line']), 0) / results.length).toFixed(1)
+    : '--';
+
+  return (
+    <div>
+      {/* HEADER */}
+      <div className="header">
+        <div className="logo">
+          <div className="logo-icon">BS</div>
+          <div>
+            <div className="logo-text">BUGSLAYERS</div>
+            <div className="logo-sub">Infineon · Agentic Bug Detection</div>
+          </div>
+        </div>
+        <StatusBar health={health}/>
+      </div>
+
+      <div className="main">
+
+        {/* STEP 0 or 1: Upload + Run */}
+        {step < 2 && (
+          <div className="hero">
+            <h1>Detect Bugs.<br/>Explain Everything.</h1>
+            <p>Upload your SmartRDI C++ snippets. Three AI agents analyze, retrieve, and explain every bug automatically.</p>
+
+            <Pipeline/>
+
+            <UploadZone onFile={setFile}/>
+
+            {file && !loading && (
+              <div style={{marginTop:24}}>
+                <button className="btn btn-primary" onClick={runPipeline}>
+                  ⚡ RUN PIPELINE
+                </button>
+              </div>
+            )}
+
+            {loading && (
+              <div className="progress-wrap">
+                <div className="progress-label">
+                  <span>{progressLabel}</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{width:`${progress}%`}}/>
+                </div>
+                <div className="progress-steps">
+                  {['Uploading','Agent 1: Diff','Agent 2: MCP','Agent 3: Qwen','Complete'].map((s,i) => (
+                    <div key={i} className={`step-pill ${
+                      progress >= [5,15,35,55,100][i] ? (progress >= [15,35,55,100,100][i] ? 'done' : 'active') : ''
+                    }`}>{s}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* STEP 2: Results */}
+        {step === 2 && results && (
+          <>
+            {/* STATS */}
+            <div className="stats-row">
+              <div className="stat-card">
+                <div className="stat-num">{results.length}</div>
+                <div className="stat-label">Snippets Analyzed</div>
+              </div>
+              <div className="stat-card accent">
+                <div className="stat-num">{results.length}</div>
+                <div className="stat-label">Bugs Detected</div>
+              </div>
+              <div className="stat-card green">
+                <div className="stat-num">{avgLine}</div>
+                <div className="stat-label">Avg Bug Line</div>
+              </div>
+              <div className="stat-card gold">
+                <div className="stat-num">3</div>
+                <div className="stat-label">Agents Used</div>
+              </div>
+            </div>
+
+            {/* ACTION BAR */}
+            <div className="action-bar">
+              <div className="action-bar-info">
+                Showing <strong>{filtered.length}</strong> of <strong>{results.length}</strong> results
+              </div>
+              <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+                <button className="btn btn-ghost" onClick={() => { setStep(0); setResults(null); setFile(null); setProgress(0); }}>
+                  ← New Upload
+                </button>
+                <button className="btn btn-accent" onClick={downloadCSV}>
+                  ↓ Download output.csv
+                </button>
+              </div>
+            </div>
+
+            {/* SEARCH + TABLE */}
+            <div className="results-header">
+              <div className="results-title">Detection Results</div>
+              <div className="search-box">
+                <span style={{color:'var(--muted)',fontSize:14}}>🔍</span>
+                <input
+                  placeholder="Search ID, explanation..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="table-wrap">
+              <div className="table-head">
+                <div>ID</div>
+                <div>BUG LINE</div>
+                <div>EXPLANATION</div>
+                <div></div>
+              </div>
+              {filtered.length === 0 && (
+                <div className="centered">
+                  <div className="empty-icon">🔍</div>
+                  <div className="empty-text">No results match your search</div>
+                </div>
+              )}
+              {filtered.map(item => (
+                <div
+                  key={item.ID}
+                  className={`table-row ${selected?.ID === item.ID ? 'selected' : ''}`}
+                  onClick={() => setSelected(item)}
+                >
+                  <div className="cell-id">#{item.ID}</div>
+                  <div className="cell-line">L{item['Bug Line']}</div>
+                  <div className="cell-explain">
+                    <div className="cell-explain-preview">{item.Explanation}</div>
+                  </div>
+                  <div className="cell-action">
+                    <button className="view-btn" onClick={e => { e.stopPropagation(); setSelected(item); }}>
+                      View →
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* DETAIL PANEL */}
+      {selected && (
+        <DetailPanel item={selected} onClose={() => setSelected(null)}/>
+      )}
+
+      {/* TOAST */}
+      {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

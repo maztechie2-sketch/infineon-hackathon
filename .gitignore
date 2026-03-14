@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.env
+*.tar
+docker/ollama_models/
+Server/embedding_model/
+Server/storage/
+output.csv
+gui/backend/__pycache__/
+code/__pycache__/
+docker/Server/
+docker/code/
+docker/gui/
