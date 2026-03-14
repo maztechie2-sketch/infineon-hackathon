@@ -18,6 +18,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 import requests
+from groq import Groq as GroqClient
+from dotenv import load_dotenv
+load_dotenv()
 
 # ── PATH SETUP ────────────────────────────────────────────────────────────────
 # gui/backend/app.py  →  go up 2 levels to reach project root
@@ -29,10 +32,9 @@ sys.path.insert(0, str(CODE_DIR))
 from mcp_client import MCPClient
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
-OLLAMA_URL  = "http://localhost:11434/api/generate"
-QWEN_MODEL  = "qwen2.5-coder:7b"
-MCP_URL     = "http://localhost:8003"
-QWEN_TIMEOUT = 300   # seconds — generous for i3 CPU
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_MODEL   = os.environ.get("GROQ_MODEL", "qwen/qwen3-32b")
+MCP_URL      = os.environ.get("MCP_URL", "http://localhost:8003")
 
 app = FastAPI(title="Infineon Bug Detection API", version="1.0")
 
@@ -109,20 +111,17 @@ Do NOT repeat the code. Just a clear explanation.
 EXPLANATION:"""
 
     try:
-        resp = requests.post(
-            OLLAMA_URL,
-            json={
-                "model": QWEN_MODEL,
-                "prompt": prompt,
-                "stream": False,
-                "options": {"temperature": 0.1, "num_predict": 200}
-            },
-            timeout=QWEN_TIMEOUT
+        client = GroqClient(api_key=GROQ_API_KEY)
+        response = client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+            max_tokens=200
         )
-        resp.raise_for_status()
-        result = resp.json().get("response", "").strip()
+        result = response.choices[0].message.content.strip()
         return result if result else explanation_hint.strip()
-    except Exception:
+    except Exception as e:
+        print(f"  [Agent 3 - Groq Warning] {e}")
         return explanation_hint.strip()
 
 # ── PROCESS ONE ROW ───────────────────────────────────────────────────────────
@@ -156,22 +155,23 @@ def process_row(row: Dict) -> Dict:
 def health():
     """Quick check that backend is alive."""
     mcp_ok = False
-    qwen_ok = False
+    groq_ok = False
     try:
         r = requests.get("http://localhost:8003", timeout=2)
         mcp_ok = True
     except Exception:
         pass
     try:
-        r = requests.get("http://localhost:11434", timeout=2)
-        qwen_ok = True
+        client = GroqClient(api_key=GROQ_API_KEY)
+        client.models.list()
+        groq_ok = True
     except Exception:
         pass
     return {
         "status": "ok",
         "mcp_server": mcp_ok,
-        "ollama": qwen_ok,
-        "model": QWEN_MODEL
+        "ollama": groq_ok,
+        "model": GROQ_MODEL
     }
 
 
