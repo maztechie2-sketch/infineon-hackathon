@@ -5,3 +5,4 @@ requests
 groq
 aiofiles
 python-dotenv
+fastmcp==2.14.5
