@@ -1,0 +1,34 @@
+services:
+  # ── MCP Server ──────────────────────────────────────────────
+  - type: web
+    name: bugslayers-mcp
+    runtime: python
+    region: oregon
+    plan: free
+    branch: cloud
+    rootDir: Server
+    buildCommand: pip install -r ../requirements_mcp.txt
+    startCommand: python mcp_server.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+
+  # ── GUI Backend (also serves frontend) ──────────────────────
+  - type: web
+    name: bugslayers-gui
+    runtime: python
+    region: oregon
+    plan: free
+    branch: cloud
+    rootDir: gui/backend
+    buildCommand: pip install -r ../../requirements_gui.txt
+    startCommand: python -m uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: qwen/qwen3-32b
+      - key: MCP_URL
+        sync: false
